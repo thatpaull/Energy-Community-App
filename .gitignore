@@ -1,0 +1,6 @@
+# Project exclude paths
+/energy-community-gui/target/
+/energy-community-percentage-service/target/
+/energy-community-producer/target/
+/energy-community-rest-api/target/
+/energy-community-usage-service/target/
