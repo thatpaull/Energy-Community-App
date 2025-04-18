@@ -76,8 +76,10 @@ public class GUI extends Application {
 		sidebar.setPrefWidth(300);
 
 		Label startLabel = new Label("Start:");
+		startLabel.setStyle("-fx-text-fill: white;");
 		TextField startField = new TextField("2024-01-01T00:00:00");
 		Label endLabel = new Label("End:");
+		endLabel.setStyle("-fx-text-fill: white;");
 		TextField endField = new TextField("2024-01-01T05:00:00");
 
 		Button getCurrentButton = new Button("Get Current");
@@ -85,6 +87,7 @@ public class GUI extends Application {
 
 		// Aktuelle Energiedaten abrufen
 		getCurrentButton.setOnAction(e -> fetchData("http://localhost:8080/energy/current"));
+
 		// Historische Energiedaten abrufen
 		getHistoricalButton.setOnAction(e -> {
 			String url = String.format("http://localhost:8080/energy/historical?start=%s&end=%s",
