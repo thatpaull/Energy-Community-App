@@ -11,9 +11,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.chart.*;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -120,7 +119,7 @@ public class GUI extends Application {
 		gifView.setStyle("-fx-border-color: #ffae00; -fx-border-width: 2; -fx-border-radius: 5;");
 
 		// GIF von lokalem Pfad laden
-		Image gifImage = new Image("file:/Users/pavelpleshakov/Desktop/energy-community/energy-community-gui/src/main/java/com/energy/community/gui/anim.gif");
+		Image gifImage = new Image(getClass().getResourceAsStream("/images/anim.gif"));
 		gifView.setImage(gifImage);
 
 		// Steuerungselemente für den Handel
