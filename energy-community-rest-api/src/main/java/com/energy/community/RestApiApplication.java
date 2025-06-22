@@ -1,4 +1,4 @@
-package com.energy.community.restapi;
+package com.energy.community;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

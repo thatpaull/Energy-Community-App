@@ -10,11 +10,30 @@
         <module name="energy-community-percentage-service" />
         <module name="energy-community-usage-service" />
         <module name="energy-community-producer" />
+        <module name="energy-community-common" />
+        <module name="energy-community-user" />
         <module name="energy-community-rest-api" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="energy-community-user" target="1.7" />
+      <module name="energy-community-gui (1)" target="17" />
+      <module name="energy-community-gui (2)" target="17" />
+      <module name="energy-community-gui (3)" target="17" />
     </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="energy-community" options="-parameters" />
+      <module name="energy-community-common" options="-parameters" />
+      <module name="energy-community-gui" options="-parameters" />
+      <module name="energy-community-gui (1)" options="" />
+      <module name="energy-community-gui (2)" options="" />
+      <module name="energy-community-gui (3)" options="-parameters" />
+      <module name="energy-community-percentage-service" options="-parameters" />
+      <module name="energy-community-producer" options="-parameters" />
+      <module name="energy-community-rest-api" options="-parameters" />
+      <module name="energy-community-usage-service" options="-parameters" />
+      <module name="energy-community-user" options="-parameters" />
+    </option>
   </component>
 </project>

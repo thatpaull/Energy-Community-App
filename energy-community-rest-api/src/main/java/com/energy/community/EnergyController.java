@@ -1,21 +1,46 @@
 package com.energy.community;
-import com.energy.community.restapi.model.EnergyData;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/energy")
 public class EnergyController {
+
+	@Autowired
+	private UsageRepository usageRepository;
+
+	@Autowired
+	private PercentageRepository percentageRepository;
+
 	@GetMapping("/current")
-	public EnergyData getCurrent() {
-		return new EnergyData(LocalDateTime.now(), 45.2, 39.1);
+	public ResponseEntity<List<UsageRecord>> getCurrentHourData() {
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime startOfCurrentHour = now.withMinute(0).withSecond(0).withNano(0);
+		LocalDateTime startOfNextHour = startOfCurrentHour.plusHours(1);
+
+		List<UsageRecord> records = usageRepository.findByHourBetween(startOfCurrentHour, startOfNextHour);
+		return ResponseEntity.ok(records);
 	}
+
+
+
+
+
 	@GetMapping("/historical")
-	public List<EnergyData> getHistorical(@RequestParam String start, @RequestParam String end) {
-		return IntStream.range(0, 5)
-			.mapToObj(i -> new EnergyData(LocalDateTime.now().minusHours(i), 30 + i, 25 + i))
-			.collect(Collectors.toList());
+	public ResponseEntity<List<UsageRecord>> getHistoricalData(
+			@RequestParam LocalDateTime start,
+			@RequestParam LocalDateTime end) {
+
+		List<UsageRecord> results = usageRepository.findByHourBetween(start, end);
+		return ResponseEntity.ok(results);
 	}
 }
