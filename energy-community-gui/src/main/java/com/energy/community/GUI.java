@@ -28,6 +28,10 @@ public class GUI extends Application {
 
 	private final Label communityProducedLabel = new Label();
 	private final Label communityUsedLabel = new Label();
+	private final Label gridUsedLabel = new Label();
+
+	private final Label temp = new Label("...");
+	private final Label conditions = new Label("...");
 
 	@Override
 	public void start(Stage primaryStage) {
@@ -45,6 +49,7 @@ public class GUI extends Application {
 		primaryStage.show();
 
 		loadStats();
+		loadWeather();
 	}
 
 	private HBox createTopBar() {
@@ -102,20 +107,22 @@ public class GUI extends Application {
 
 		communityProducedLabel.setTextFill(Color.WHITE);
 		communityUsedLabel.setTextFill(Color.WHITE);
+		gridUsedLabel.setTextFill(Color.WHITE);
 
 		Button refreshButton = new Button("Refresh");
 		refreshButton.setStyle("-fx-background-color: #ffae00; -fx-text-fill: #1A1A2E;");
 		refreshButton.setOnAction(e -> loadStats());
 
 		sidebar.getChildren().addAll(
-			startLabel, startDatePicker, startTimeField,
-			endLabel, endDatePicker, endTimeField,
-			getCurrentButton, getHistoricalButton,
-			new Separator(),
-			title,
-			communityProducedLabel,
-			communityUsedLabel,
-			refreshButton
+				startLabel, startDatePicker, startTimeField,
+				endLabel, endDatePicker, endTimeField,
+				getCurrentButton, getHistoricalButton,
+				new Separator(),
+				title,
+				communityProducedLabel,
+				communityUsedLabel,
+				gridUsedLabel,
+				refreshButton
 		);
 
 		return sidebar;
@@ -147,26 +154,24 @@ public class GUI extends Application {
 		weatherBox.setPadding(new Insets(10));
 		weatherBox.setStyle("-fx-background-color: #16213E; -fx-border-radius: 10;");
 
-		Label weatherLabel = new Label("Current Weather");
+		Label weatherLabel = new Label("Current Weather in Wien AT");
 		weatherLabel.setTextFill(Color.WHITE);
 
-		Label temp = new Label("23°C");
 		temp.setFont(new Font("Arial", 24));
 		temp.setTextFill(Color.WHITE);
 
-		Label conditions = new Label("Sunny - Wind: 5 m/s");
 		conditions.setTextFill(Color.WHITE);
 
-		weatherBox.getChildren().addAll(weatherLabel, temp, conditions);
+		Button refreshWeatherButton = new Button("Refresh Weather");
+		refreshWeatherButton.setOnAction(e -> loadWeather());
 
-		DatePicker calendar = new DatePicker();
-		calendar.setStyle("-fx-background-color: #16213E;");
+		weatherBox.getChildren().addAll(weatherLabel, temp, conditions, refreshWeatherButton);
 
 		historyDisplay.setEditable(false);
 		historyDisplay.setStyle("-fx-control-inner-background: #16213E; -fx-text-fill: white;");
 		historyDisplay.setPrefHeight(300);
 
-		sidebar.getChildren().addAll(weatherBox, calendar, historyDisplay);
+		sidebar.getChildren().addAll(weatherBox, historyDisplay);
 		VBox.setVgrow(historyDisplay, Priority.ALWAYS);
 		return sidebar;
 	}
@@ -175,29 +180,29 @@ public class GUI extends Application {
 		try {
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
 			httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-				.thenApply(HttpResponse::body)
-				.thenAccept(response -> {
-					try {
-						JSONArray jsonArray = new JSONArray(response);
-						StringBuilder formatted = new StringBuilder();
-						for (int i = 0; i < jsonArray.length(); i++) {
-							JSONObject obj = jsonArray.getJSONObject(i);
-							String hour = obj.getString("hour").substring(0, 16);
+					.thenApply(HttpResponse::body)
+					.thenAccept(response -> {
+						try {
+							JSONArray jsonArray = new JSONArray(response);
+							StringBuilder formatted = new StringBuilder();
+							for (int i = 0; i < jsonArray.length(); i++) {
+								JSONObject obj = jsonArray.getJSONObject(i);
+								String hour = obj.getString("hour").substring(0, 16);
 
-							formatted.append("Time: ").append(hour).append("\n")
-								.append("Community Produced: ").append(String.format("%.2f", obj.getDouble("communityProduced"))).append(" kWh\n")
-								.append("Community Used:     ").append(String.format("%.2f", obj.getDouble("communityUsed"))).append(" kWh\n")
-								.append("Grid Used:          ").append(String.format("%.2f", obj.getDouble("gridUsed"))).append(" kWh\n\n");
+								formatted.append("Time: ").append(hour).append("\n")
+										.append("Community Produced: ").append(String.format("%.2f", obj.getDouble("communityProduced"))).append(" kWh\n")
+										.append("Community Used:     ").append(String.format("%.2f", obj.getDouble("communityUsed"))).append(" kWh\n")
+										.append("Grid Used:          ").append(String.format("%.2f", obj.getDouble("gridUsed"))).append(" kWh\n\n");
+							}
+							Platform.runLater(() -> historyDisplay.setText(formatted.toString()));
+						} catch (Exception parseEx) {
+							Platform.runLater(() -> historyDisplay.setText("Failed to parse response.\n\n" + response));
 						}
-						Platform.runLater(() -> historyDisplay.setText(formatted.toString()));
-					} catch (Exception parseEx) {
-						Platform.runLater(() -> historyDisplay.setText("Failed to parse response.\n\n" + response));
-					}
-				})
-				.exceptionally(e -> {
-					Platform.runLater(() -> historyDisplay.setText("Error: " + e.getMessage()));
-					return null;
-				});
+					})
+					.exceptionally(e -> {
+						Platform.runLater(() -> historyDisplay.setText("Error: " + e.getMessage()));
+						return null;
+					});
 		} catch (Exception e) {
 			historyDisplay.setText("Error: " + e.getMessage());
 		}
@@ -208,28 +213,69 @@ public class GUI extends Application {
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(statsUrl)).build();
 
 		httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-			.thenApply(HttpResponse::body)
-			.thenAccept(response -> {
-				try {
-					JSONObject obj = new JSONObject(response);
-					System.out.println("Summary JSON: " + response);
+				.thenApply(HttpResponse::body)
+				.thenAccept(response -> {
+					try {
+						JSONObject obj = new JSONObject(response);
+						System.out.println("Summary JSON: " + response);
 
+						Platform.runLater(() -> {
+							communityProducedLabel.setText("Community produced: " +
+									String.format("%.3f", obj.getDouble("totalProduced")) + " kWh");
+
+							communityUsedLabel.setText("Community used: " +
+									String.format("%.3f", obj.getDouble("totalUsed")) + " kWh");
+
+							gridUsedLabel.setText("Grid used: " +
+									String.format("%.3f", obj.getDouble("totalGrid")) + " kWh");
+
+						});
+
+					} catch (Exception ex) {
+						System.out.println("Failed to parse summary JSON: " + response);
+					}
+				})
+				.exceptionally(e -> {
+					System.out.println("Failed to load stats: " + e.getMessage());
+					return null;
+				});
+	}
+
+	// Новый метод загрузки погоды из WeatherAPI.com для Вены
+	private void loadWeather() {
+		String weatherUrl = "http://api.weatherapi.com/v1/current.json?key=713084ecdf1a4ac1b5b100419252206&q=Vienna&aqi=no";
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(weatherUrl)).build();
+
+		httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+				.thenApply(HttpResponse::body)
+				.thenAccept(response -> {
+					try {
+						JSONObject obj = new JSONObject(response);
+						JSONObject current = obj.getJSONObject("current");
+						JSONObject condition = current.getJSONObject("condition");
+
+						String temperature = current.getDouble("temp_c") + "°C";
+						String weatherText = condition.getString("text");
+						double wind = current.getDouble("wind_kph");
+
+						Platform.runLater(() -> {
+							temp.setText(temperature);
+							conditions.setText(weatherText + " - Wind: " + wind + " km/h");
+						});
+					} catch (Exception e) {
+						Platform.runLater(() -> {
+							temp.setText("Error");
+							conditions.setText("Failed to parse weather.");
+						});
+					}
+				})
+				.exceptionally(e -> {
 					Platform.runLater(() -> {
-						communityProducedLabel.setText("Community produced: " +
-							String.format("%.3f", obj.getDouble("totalProduced")) + " kWh");
-
-						communityUsedLabel.setText("Community used: " +
-							String.format("%.3f", obj.getDouble("totalUsed")) + " kWh");
+						temp.setText("Error");
+						conditions.setText("Could not fetch weather.");
 					});
-
-				} catch (Exception ex) {
-					System.out.println("Failed to parse summary JSON: " + response);
-				}
-			})
-			.exceptionally(e -> {
-				System.out.println("Failed to load stats: " + e.getMessage());
-				return null;
-			});
+					return null;
+				});
 	}
 
 	public static void main(String[] args) {
