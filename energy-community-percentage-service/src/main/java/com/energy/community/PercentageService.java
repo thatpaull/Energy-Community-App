@@ -11,71 +11,72 @@ import java.util.Optional;
 @Service
 public class PercentageService {
 
-    private final UsageRepository usageRepo;
-    private final PercentageRepository percRepo;
+	private final UsageRepository usageRepo;
+	private final PercentageRepository percRepo;
 
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+	private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-    public PercentageService(UsageRepository usageRepo,
-                             PercentageRepository percRepo) {
-        this.usageRepo = usageRepo;
-        this.percRepo  = percRepo;
-    }
+	public PercentageService(UsageRepository usageRepo,
+							 PercentageRepository percRepo) {
+		this.usageRepo = usageRepo;
+		this.percRepo  = percRepo;
+	}
 
-    @RabbitListener(queues = RabbitConfig.USAGE_UPDATED_Q)
-    public void handleUsageUpdated(String hourIso) {
+	@RabbitListener(queues = RabbitConfig.USAGE_UPDATED_Q)
+	public void handleUsageUpdated(String hourIso) {
 
-        LocalDateTime hour = LocalDateTime.parse(hourIso, ISO);
+		LocalDateTime hour = LocalDateTime.parse(hourIso, ISO);
 
-        UsageRecord ur = usageRepo.findById(hour).orElse(null);
-        if (ur == null) {
-            return;
-        }
+		UsageRecord ur = usageRepo.findById(hour).orElse(null);
+		if (ur == null) {
+			System.out.printf("[!] No usage record found for %s%n", hour);
+			return;
+		}
 
-        double produced = ur.getCommunityProduced();
-        double used     = ur.getCommunityUsed();
+		double produced = ur.getCommunityProduced();
+		double used     = ur.getCommunityUsed();
 
-        if (produced == 0) {
-            return;
-        }
+		if (produced == 0) {
+			System.out.printf("[!] Produced energy is zero for %s, skipping%n", hour);
+			return;
+		}
 
-        double gridPortion        = Math.max(0, (used - produced) / used);
-        double communityDepletion = Math.max(0, (produced - used) / produced);
+		double gridPortion        = Math.max(0, (used - produced) / used);
+		double communityDepletion = Math.max(0, (produced - used) / produced);
 
-        PercentageRecord pr = new PercentageRecord(
-                hour, communityDepletion, gridPortion);
+		PercentageRecord pr = new PercentageRecord(hour, gridPortion, communityDepletion);
 
-        percRepo.save(pr);
-        percentageCalculationLogic(hour);
-    }
+		percRepo.save(pr);
 
-    private void percentageCalculationLogic(LocalDateTime hour) {
-        hour = hour.withMinute(0).withSecond(0).withNano(0);
+		percentageCalculationLogic(hour);
+	}
 
-        Optional<UsageRecord> usageOpt = usageRepo.findById(hour);
+	private void percentageCalculationLogic(LocalDateTime hour) {
+		hour = hour.withMinute(0).withSecond(0).withNano(0);
 
-        if (usageOpt.isPresent()) {
-            UsageRecord usage = usageOpt.get();
+		Optional<UsageRecord> usageOpt = usageRepo.findById(hour);
 
-            double produced = usage.getCommunityProduced();
-            double used = usage.getCommunityUsed();
+		if (usageOpt.isPresent()) {
+			UsageRecord usage = usageOpt.get();
 
-            double communityDepleted = 0.0;
-            double gridPortion = 0.0;
+			double produced = usage.getCommunityProduced();
+			double used = usage.getCommunityUsed();
 
-            if (used > 0) {
-                communityDepleted = Math.min(produced, used) / used;
-                gridPortion = (used - Math.min(produced, used)) / used;
-            }
+			double communityDepleted = 0.0;
+			double gridPortion = 1.0;
 
-            PercentageRecord record = new PercentageRecord(hour, communityDepleted, gridPortion);
-            percRepo.save(record);
+			if (used > 0) {
+				communityDepleted = Math.min(produced, used) / used;
+				gridPortion = (used - Math.min(produced, used)) / used;
+			}
 
-            System.out.printf("[✓] Calculated for %s: depleted=%.2f, grid=%.2f%n", hour, communityDepleted, gridPortion);
-        } else {
-            System.out.printf("[!] No usage data found for %s%n", hour);
-        }
-    }
+			PercentageRecord record = new PercentageRecord(hour, gridPortion, communityDepleted);
+			percRepo.save(record);
 
+			System.out.printf("[✓] Calculated for %s: depleted=%.2f, grid=%.2f%n", hour, communityDepleted, gridPortion);
+		} else {
+			System.out.printf("[!] No usage data found for %s%n", hour);
+		}
+	}
 
 }

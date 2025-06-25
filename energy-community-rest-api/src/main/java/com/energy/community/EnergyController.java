@@ -32,9 +32,6 @@ public class EnergyController {
 	}
 
 
-
-
-
 	@GetMapping("/historical")
 	public ResponseEntity<List<UsageRecord>> getHistoricalData(
 			@RequestParam LocalDateTime start,

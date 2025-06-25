@@ -31,6 +31,9 @@ public class UsageService {
 			rec.setCommunityUsed(rec.getCommunityUsed() + msg.getAmount());
 		}
 
+		double gridUsedCalc = rec.getCommunityUsed() - rec.getCommunityProduced();
+		rec.setGridUsed(gridUsedCalc > 0 ? gridUsedCalc : 0);
+
 		repo.save(rec);
 		rabbitTemplate.convertAndSend(RabbitConfig.USAGE_UPDATED_Q, msg.getHour());
 	}
@@ -48,17 +51,19 @@ public class UsageService {
 		double totalUsed = all.stream().mapToDouble(UsageRecord::getCommunityUsed).sum();
 		double totalGrid = all.stream().mapToDouble(UsageRecord::getGridUsed).sum();
 
-		double poolUsedPercent = totalProduced == 0 ? 0 : (totalUsed / totalProduced) * 100;
-		double gridPortionPercent = totalUsed == 0 ? 0 : (totalGrid / totalUsed) * 100;
+		double gridPortion = totalUsed == 0 ? 0 : totalGrid / totalUsed;
+		double communityDepleted = totalProduced == 0 ? 0 : (totalProduced - totalUsed) / totalProduced;
 
 		Map<String, Double> summary = new HashMap<>();
-		summary.put("poolUsedPercent", poolUsedPercent);
-		summary.put("gridPortionPercent", gridPortionPercent);
 		summary.put("totalProduced", totalProduced);
 		summary.put("totalUsed", totalUsed);
 		summary.put("totalGrid", totalGrid);
+		summary.put("gridPortion", gridPortion);
+		summary.put("communityDepleted", communityDepleted);
 
 		return summary;
 	}
+
+
 
 }

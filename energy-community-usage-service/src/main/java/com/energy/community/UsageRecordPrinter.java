@@ -13,7 +13,7 @@ public class UsageRecordPrinter {
 
 	static {
 		DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
-		symbols.setDecimalSeparator(','); // Используем запятую вместо точки
+		symbols.setDecimalSeparator(',');
 		df = new DecimalFormat("#0.00", symbols);
 	}
 

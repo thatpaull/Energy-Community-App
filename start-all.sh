@@ -19,4 +19,4 @@ new_tab "cd energy-community-producer           && mvn spring-boot:run"
 new_tab "cd energy-community-user               && mvn spring-boot:run"
 new_tab "cd energy-community-gui                && mvn exec:java -Dexec.mainClass=com.energy.community.GUI"
 
-echo "✅  Все модули стартуют в отдельных вкладках…"
+echo "✅  Start all Modules"

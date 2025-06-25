@@ -30,6 +30,9 @@ public class GUI extends Application {
 	private final Label communityUsedLabel = new Label();
 	private final Label gridUsedLabel = new Label();
 
+	private final Label gridPortionLabel = new Label();
+	private final Label communityDepletedLabel = new Label();
+
 	private final Label temp = new Label("...");
 	private final Label conditions = new Label("...");
 
@@ -108,6 +111,8 @@ public class GUI extends Application {
 		communityProducedLabel.setTextFill(Color.WHITE);
 		communityUsedLabel.setTextFill(Color.WHITE);
 		gridUsedLabel.setTextFill(Color.WHITE);
+		gridPortionLabel.setTextFill(Color.WHITE);
+		communityDepletedLabel.setTextFill(Color.WHITE);
 
 		Button refreshButton = new Button("Refresh");
 		refreshButton.setStyle("-fx-background-color: #ffae00; -fx-text-fill: #1A1A2E;");
@@ -122,6 +127,8 @@ public class GUI extends Application {
 			communityProducedLabel,
 			communityUsedLabel,
 			gridUsedLabel,
+			gridPortionLabel,
+			communityDepletedLabel,
 			refreshButton
 		);
 
@@ -217,7 +224,6 @@ public class GUI extends Application {
 			.thenAccept(response -> {
 				try {
 					JSONObject obj = new JSONObject(response);
-					System.out.println("Summary JSON: " + response);
 
 					Platform.runLater(() -> {
 						communityProducedLabel.setText("Community produced: " +
@@ -229,6 +235,11 @@ public class GUI extends Application {
 						gridUsedLabel.setText("Grid used: " +
 							String.format("%.3f", obj.getDouble("totalGrid")) + " kWh");
 
+						gridPortionLabel.setText("Grid Portion: " +
+							String.format("%.2f", obj.optDouble("gridPortion", 0.0) * 100) + " %");
+
+						communityDepletedLabel.setText("Community Depleted: " +
+							String.format("%.2f", obj.optDouble("communityDepleted", 0.0) * 100) + " %");
 					});
 
 				} catch (Exception ex) {
@@ -241,7 +252,6 @@ public class GUI extends Application {
 			});
 	}
 
-	// Новый метод загрузки погоды из WeatherAPI.com для Вены
 	private void loadWeather() {
 		String weatherUrl = "http://api.weatherapi.com/v1/current.json?key=713084ecdf1a4ac1b5b100419252206&q=Vienna&aqi=no";
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(weatherUrl)).build();
